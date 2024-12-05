@@ -3,10 +3,6 @@ const Usuario = require('../models/usuario_model');
 const ruta = express.Router();
 const Joi = require('@hapi/joi');
 
-ruta.get('/', (req,res)=>{
-    res.json('Respuesta a peticion GET a USUARIOS funcionando correctamente...');
-});
-
 // Validaciones para el objeto usuario
 const schema = Joi.object({
     nombre: Joi.string()
@@ -20,6 +16,20 @@ const schema = Joi.object({
     
     email: Joi.string()
         .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net', 'edu', 'co'] } })
+});
+
+//endpoint de tipo GET para el recurso usuarios. Lista todos los usuarios
+ruta.get('/',(req, res) => {
+    let resultado = listarUsuarioActivos();
+    resultado.then(usuarios => {
+        res.json(usuarios)
+    }).catch(err => {
+        res.status(400).json(
+            {
+                err
+            }
+        )
+    })
 });
 
 module.exports = ruta;
@@ -83,6 +93,7 @@ ruta.delete('/:email', (req, res) => {
     });
 });
 
+
 async function actualizarUsuario(email, body){
     let usuario = await Usuario.findOneAndUpdate({"email": email}, {
         $set: {
@@ -101,6 +112,12 @@ async function crearUsuario(body){
         password    :body.password
     });
     return await usuario.save();
+}
+
+//Funcion asincrona para listar todos los usuarios activos
+async function listarUsuarioActivos(){
+    let usuarios = await Usuario.find({"estado": true});
+    return usuarios;
 }
 
 //Funcion asincrona para inactivar un usuario
